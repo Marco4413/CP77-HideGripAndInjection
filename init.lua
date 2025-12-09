@@ -43,8 +43,9 @@ local Condition = Enum.New{
 
 ---@enum ItemKind
 local ItemKind = Enum.New{
-    Clothing = 1,
-    Weapon   = 2,
+    Clothing  = 1,
+    Cyberware = 2,
+    Weapon    = 3,
 }
 
 local function _SortedKeys(tbl)
@@ -281,6 +282,45 @@ function Mod:GetActiveClothingForPuppet(puppet)
     return activeClothing
 end
 
+function Mod:GetActiveCyberwareForPuppet(puppet)
+    local equipmentSystem = Game.GetScriptableSystemsContainer():Get("EquipmentSystem")
+    local equipmentData = equipmentSystem.GetData(Game.GetPlayer())
+    if not equipmentData then return {}; end
+
+    local activeCyberware = {}
+
+    local cyberwareEquipmentAreas = equipmentData:GetAllCyberwareEquipmentAreas()
+    for _, equipmentArea in next, cyberwareEquipmentAreas do
+        local slotCount = equipmentData:GetNumberOfSlots(equipmentArea)
+        for slotIndex=0, slotCount-1 do
+            local itemID = equipmentData:GetItemInEquipSlot(equipmentArea, slotIndex)
+            -- Has Item in Slot
+            if ItemID.IsValid(itemID) then
+                local itemRecord = TweakDB:GetRecord(itemID.id)
+                -- Is Visual Item
+                if itemRecord:GetPlacementSlotsCount() > 0 then
+                    local friendlyName = itemRecord:FriendlyName()
+                    local entityName = itemRecord:EntityName()
+                    local iconPath = itemRecord:IconPath()
+
+                    activeCyberware[itemID.id.value] = true
+                    if #friendlyName > 0 then
+                        activeCyberware[friendlyName] = true
+                    end
+                    if #entityName.value > 0 then
+                        activeCyberware[entityName.value] = true
+                    end
+                    if #iconPath > 0 then
+                        activeCyberware[iconPath] = true
+                    end
+                end
+            end
+        end
+    end
+
+    return activeCyberware
+end
+
 function Mod:GetActiveWeaponsForPuppet(puppet)
     if not puppet.GetActiveWeapon then return {}; end
 
@@ -296,6 +336,7 @@ end
 
 ---@class EvalContext
 ---@field GetActiveClothing  fun(self: EvalContext): table<string, boolean>
+---@field GetActiveCyberware fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveWeapons   fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveItems fun(self: EvalContext, itemKind: ItemKind): table<string, boolean>
 ---@field HasActiveItem  fun(self: EvalContext, itemKind: ItemKind, itemName: string): boolean
@@ -311,6 +352,12 @@ function Mod:CreateRuleEvalContextForPuppet(puppet)
         return self._activeClothing
     end
 
+    function context:GetActiveCyberware()
+        if self._activeCyberware then return self._activeCyberware; end
+        self._activeCyberware = self._mod:GetActiveCyberwareForPuppet(self._puppet)
+        return self._activeCyberware
+    end
+
     function context:GetActiveWeapons()
         if self._activeWeapons then return self._activeWeapons; end
         self._activeWeapons = self._mod:GetActiveWeaponsForPuppet(self._puppet)
@@ -320,6 +367,8 @@ function Mod:CreateRuleEvalContextForPuppet(puppet)
     function context:GetActiveItems(itemKind)
         if itemKind == ItemKind.Clothing then
             return self:GetActiveClothing()
+        elseif itemKind == ItemKind.Cyberware then
+            return self:GetActiveCyberware()
         elseif itemKind == ItemKind.Weapon then
             return self:GetActiveWeapons()
         end
@@ -489,6 +538,7 @@ local function Event_OnInit()
     Observe("PlayerPuppet", "OnItemUnequipped", Event_AutoApplyRulesForPlayer)
     Observe("PlayerPuppet", "OnMakePlayerVisibleAfterSpawn", Event_AutoApplyRulesForPlayer)
     Observe("gameWardrobeSystem", "SetActiveClothingSetIndex", Event_AutoApplyRulesForPlayer)
+    Observe("RipperDocGameController", "OnUninitialize", Event_AutoApplyRulesForPlayer)
 
     Observe("gameuiInventoryGameController", "OnInitialize", Event_UpdatePlayerAll)
     Observe("gameuiInventoryGameController", "RefreshedEquippedItemData", Event_UpdatePlayerAll)
