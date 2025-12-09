@@ -414,7 +414,9 @@ function Mod:UpdatePlayerTPP()
     local isWeaponGripEnabled = self:IsGroupEnabled(Group.WeaponGrip)
 
     for _, puppet in next, puppets do
-        -- TODO: Test with multiple hand cyberwares
+        -- NOTE: Apparently the game only shows one of the hand cyberwares.
+        --       You can have both Johnny's tattoo and the Coprocessor but
+        --        only one will show in the Inventory or Photo Mode
         local item = transactionSystem:GetItemInSlot(puppet, "AttachmentSlots.RightHand")
         if item then
             local itemID = item:GetItemID()
@@ -431,9 +433,13 @@ function Mod:UpdatePlayerTPP()
     end
 end
 
-local function Event_UpdatePlayerAll()
+function Mod:UpdatePlayerAll()
     Mod:UpdatePlayer()
     Mod:UpdatePlayerTPP()
+end
+
+local function Event_UpdatePlayerAll()
+    Mod:UpdatePlayerAll()
 end
 
 local function Event_AutoApplyRulesForPlayer()
@@ -486,12 +492,12 @@ local function Event_OnDraw()
             ImGui.PushID("General")
             if BetterUI.FitButtonN(2, "Apply Rules") then
                 if Mod:ApplyRulesForPlayer() then
-                    Event_UpdatePlayerAll()
+                    Mod:UpdatePlayerAll()
                 end
             end
             ImGui.SameLine()
             if BetterUI.FitButtonN(1, "Update Player") then
-                Event_UpdatePlayerAll()
+                Mod:UpdatePlayerAll()
             end
             Mod.autoApplyRules = ImGui.Checkbox("Auto Apply Rules", Mod.autoApplyRules)
             ImGui.PopID()
@@ -505,7 +511,7 @@ local function Event_OnDraw()
                     local newIsGroupEnabled = ImGui.Checkbox(Enum.ToHumanCase(name), isGroupEnabled)
                     if newIsGroupEnabled ~= isGroupEnabled then
                         Mod:ToggleComponentsByGroup(value)
-                        Event_UpdatePlayerAll()
+                        Mod:UpdatePlayerAll()
                     end
                 end
             end
@@ -639,7 +645,7 @@ local function Event_OnDraw()
 
             if BetterUI.FitButtonN(1, "Apply Rules") then
                 if Mod:ApplyRulesForPlayer() then
-                    Event_UpdatePlayerAll()
+                    Mod:UpdatePlayerAll()
                 end
             end
             ImGui.PopID()
@@ -682,7 +688,7 @@ function Mod:Init()
             local inputDescription = table.concat{ "Toggle ", Enum.ToHumanCase(name) }
             registerInput(inputId, inputDescription, _InputAsHotkey(function()
                 self:ToggleComponentsByGroup(value)
-                Event_UpdatePlayerAll()
+                self:UpdatePlayerAll()
             end))
         end
     end
