@@ -19,4 +19,6 @@ done
 mkdir -p "$CET_TARGET/data"
 echo 'Thank you.' > "$CET_TARGET/data/PLEASE_VORTEX_DONT_IGNORE_THIS_FOLDER"
 
-7z a -mx9 -r -- "$BASE/$MOD_NAME-$MOD_VERSION.zip" "./$BASE/bin"
+if [ "$1" != '-noarchive' ]; then
+    7z a -mx9 -r -- "$BASE/$MOD_NAME-$MOD_VERSION.zip" "./$BASE/bin"
+fi
