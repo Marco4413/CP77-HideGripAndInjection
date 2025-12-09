@@ -294,11 +294,43 @@ function Mod:GetActiveWeaponsForPuppet(puppet)
     return activeWeapons
 end
 
+---@class EvalContext
+---@field GetActiveClothing  fun(self: EvalContext): table<string, boolean>
+---@field GetActiveWeapons   fun(self: EvalContext): table<string, boolean>
+---@field GetActiveItems fun(self: EvalContext, itemKind: ItemKind): table<string, boolean>
+---@field HasActiveItem  fun(self: EvalContext, itemKind: ItemKind, itemName: string): boolean
+
+---@param puppet gamePuppet
+---@return EvalContext
 function Mod:CreateRuleEvalContextForPuppet(puppet)
-    return {
-        activeClothing = self:GetActiveClothingForPuppet(puppet),
-        activeWeapons  = self:GetActiveWeaponsForPuppet(puppet),
-    }
+    local context = { _mod = self, _puppet = puppet }
+
+    function context:GetActiveClothing()
+        if self._activeClothing then return self._activeClothing; end
+        self._activeClothing = self._mod:GetActiveClothingForPuppet(self._puppet)
+        return self._activeClothing
+    end
+
+    function context:GetActiveWeapons()
+        if self._activeWeapons then return self._activeWeapons; end
+        self._activeWeapons = self._mod:GetActiveWeaponsForPuppet(self._puppet)
+        return self._activeWeapons
+    end
+
+    function context:GetActiveItems(itemKind)
+        if itemKind == ItemKind.Clothing then
+            return self:GetActiveClothing()
+        elseif itemKind == ItemKind.Weapon then
+            return self:GetActiveWeapons()
+        end
+        return {}
+    end
+
+    function context:HasActiveItem(itemKind, itemName)
+        return self:GetActiveItems(itemKind)[itemName] and true or false
+    end
+
+    return context
 end
 
 ---@return Rule
@@ -326,33 +358,21 @@ function Mod:AddRule(rule, index)
     return rule
 end
 
----@class EvalContext
----@field activeClothing table<string, boolean>
----@field activeWeapons table<string, boolean>
-
 ---@param evalContext EvalContext
 ---@param rule Rule
 function Mod:ApplyRule(evalContext, rule)
     if not rule.enabled then return false; end
 
-    local activeItems = {}
-    if rule.itemKind == ItemKind.Clothing then
-        activeItems = evalContext.activeClothing
-    elseif rule.itemKind == ItemKind.Weapon then
-        activeItems = evalContext.activeWeapons
-    end
-
-    local isItemActive = activeItems[rule.itemName] and true or false
-    local isRuleApplied = false
+    local conditionsMet = false
     if rule.condition == Condition.Always then
-        isRuleApplied = true
+        conditionsMet = true
     elseif rule.condition == Condition.IfActive then
-        isRuleApplied = isItemActive
+        conditionsMet = evalContext:HasActiveItem(rule.itemKind, rule.itemName)
     elseif rule.condition == Condition.IfNotActive then
-        isRuleApplied = not isItemActive
+        conditionsMet = not evalContext:HasActiveItem(rule.itemKind, rule.itemName)
     end
 
-    if not isRuleApplied then return false; end
+    if not conditionsMet then return false; end
 
     self:ToggleComponentsByGroup(rule.group, rule.groupEnabled, false)
     return true
@@ -536,8 +556,7 @@ local function Event_OnDraw()
             ImGui.Separator()
 
             local player = Game.GetPlayer()
-            local activeClothing = player and Mod:GetActiveClothingForPuppet(player) or {}
-            local activeWeapons  = player and Mod:GetActiveWeaponsForPuppet(player)  or {}
+            local evalContext = Mod:CreateRuleEvalContextForPuppet(player)
 
             if #Mod._rules <= 0 then
                 if BetterUI.ButtonAdd() then
@@ -603,12 +622,7 @@ local function Event_OnDraw()
 
                     ImGui.SameLine()
                     ImGui.PushID("ItemName")
-                    local activeItems = {}
-                    if rule.itemKind == ItemKind.Clothing then
-                        activeItems = activeClothing
-                    elseif rule.itemKind == ItemKind.Weapon then
-                        activeItems = activeWeapons
-                    end
+                    local activeItems = evalContext:GetActiveItems(rule.itemKind)
 
                     local EMPTY_ITEM_LABEL = "{Empty Item}"
                     local extraActiveItems = { rule.itemName, EMPTY_ITEM_LABEL }
