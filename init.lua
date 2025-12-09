@@ -47,6 +47,15 @@ local ItemKind = Enum.New{
     Weapon   = 2,
 }
 
+local function _SortedKeys(tbl)
+    local sortedKeys = {}
+    for key, _ in next, tbl do
+        table.insert(sortedKeys, tostring(key))
+    end
+    table.sort(sortedKeys)
+    return sortedKeys
+end
+
 -- Search for ' Rule' when modifying the definition
 
 ---@class Rule
@@ -626,7 +635,7 @@ local function Event_OnDraw()
                             rule.itemName = ""
                         end
 
-                        for itemName, _ in next, activeItems do
+                        for _, itemName in next, _SortedKeys(activeItems) do
                             if ImGui.Selectable(itemName) then
                                 rule.itemName = itemName
                             end
