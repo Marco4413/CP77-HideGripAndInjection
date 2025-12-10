@@ -68,6 +68,14 @@ end
 ---@field groupEnabled boolean
 ---@field stopsPropagation boolean
 
+---The context on which rules are evaluated
+---@class EvalContext
+---@field GetActiveClothing  fun(self: EvalContext): table<string, boolean>
+---@field GetActiveCyberware fun(self: EvalContext): table<string, boolean>
+---@field GetActiveWeapons   fun(self: EvalContext): table<string, boolean>
+---@field GetActiveItems fun(self: EvalContext, itemKind: ItemKind): table<string, boolean>
+---@field HasActiveItem  fun(self: EvalContext, itemKind: ItemKind, itemName: string): boolean
+
 local Mod = {
     Enum = Enum,
     Group = Group,
@@ -258,10 +266,15 @@ local _EquipmentExSlots = {
     "OutfitSlots.BodyUnder",
 }
 
+---@return string[]
 function Mod:GetClothingSlots()
     return EquipmentEx and _EquipmentExSlots or _VanillaSlots
 end
 
+---Clothing equipped by the puppet (the word 'Active' was chosen so
+--- that it makes sense for weapons and to keep the Condition enum small).
+---@param puppet gamePuppet
+---@return table<string, boolean>
 function Mod:GetActiveClothingForPuppet(puppet)
     local activeClothing = {}
 
@@ -282,6 +295,10 @@ function Mod:GetActiveClothingForPuppet(puppet)
     return activeClothing
 end
 
+---Cyberware equipped by the puppet (the word 'Active' was chosen so
+--- that it makes sense for weapons and to keep the Condition enum small).
+---@param puppet gamePuppet
+---@return table<string, boolean>
 function Mod:GetActiveCyberwareForPuppet(puppet)
     local equipmentSystem = Game.GetScriptableSystemsContainer():Get("EquipmentSystem")
     local equipmentData = equipmentSystem.GetData(puppet)
@@ -321,6 +338,9 @@ function Mod:GetActiveCyberwareForPuppet(puppet)
     return activeCyberware
 end
 
+---Active weapons (currently held by the puppet, not in the loadout)
+---@param puppet gamePuppet
+---@return table<string, boolean>
 function Mod:GetActiveWeaponsForPuppet(puppet)
     if not puppet.GetActiveWeapon then return {}; end
 
@@ -337,13 +357,7 @@ function Mod:GetActiveWeaponsForPuppet(puppet)
     return activeWeapons
 end
 
----@class EvalContext
----@field GetActiveClothing  fun(self: EvalContext): table<string, boolean>
----@field GetActiveCyberware fun(self: EvalContext): table<string, boolean>
----@field GetActiveWeapons   fun(self: EvalContext): table<string, boolean>
----@field GetActiveItems fun(self: EvalContext, itemKind: ItemKind): table<string, boolean>
----@field HasActiveItem  fun(self: EvalContext, itemKind: ItemKind, itemName: string): boolean
-
+---Creates a new EvalContext based on puppet
 ---@param puppet gamePuppet
 ---@return EvalContext
 function Mod:CreateRuleEvalContextForPuppet(puppet)
@@ -400,7 +414,7 @@ end
 
 ---@param rule Rule
 ---@param index integer|nil last index by default
----@return Rule
+---@return Rule rule allows for `local rule = Mod:AddRule(Mod:CreateDefaultRule())`
 function Mod:AddRule(rule, index)
     if index then
         table.insert(self._rules, index, rule)
@@ -412,6 +426,7 @@ end
 
 ---@param evalContext EvalContext
 ---@param rule Rule
+---@return boolean applied whether rule was applied
 function Mod:ApplyRule(evalContext, rule)
     if not rule.enabled then return false; end
 
@@ -431,8 +446,8 @@ function Mod:ApplyRule(evalContext, rule)
 end
 
 ---@param puppet gamePuppet
----@param evalContext EvalContext|nil
----@return boolean
+---@param evalContext EvalContext|nil default: `Mod:CreateRuleEvalContextForPuppet(puppet)`
+---@return boolean applied whether at least one rule was applied (puppet probably needs to be updated)
 function Mod:ApplyRulesForPuppet(puppet, evalContext)
     if not evalContext then
         evalContext = self:CreateRuleEvalContextForPuppet(puppet)
@@ -479,10 +494,16 @@ function Mod:UpdatePlayer()
     self:UpdateEntity(player)
 end
 
+---@param itemID ItemID
+---@return boolean
 function Mod:IsWeaponGripItemID(itemID)
     return itemID.id.value:find("^Items.AdvancedPowerGrip") ~= nil
 end
 
+---`Mod:UpdatePlayer()` just toggles components on the player.
+---Inventory and Photo puppets do not use components to display the weapon grip.
+---The function basically checks the state of `Group.WeaponGrip` and changes the
+--- appearance of the item to show/hide it
 function Mod:UpdatePlayerTPP()
     -- TODO: Check if the mod works on vehicles TPP
     local puppets = {}
