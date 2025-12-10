@@ -315,7 +315,7 @@ function Mod:GetActiveCyberwareForPuppet(puppet)
             if ItemID.IsValid(itemID) then
                 local itemRecord = TweakDB:GetRecord(itemID.id)
                 -- Is Visual Item
-                if itemRecord:GetPlacementSlotsCount() > 0 then
+                if itemRecord and itemRecord:GetPlacementSlotsCount() > 0 then
                     local friendlyName = itemRecord:FriendlyName()
                     local entityName = itemRecord:EntityName()
                     local iconPath = itemRecord:IconPath()
