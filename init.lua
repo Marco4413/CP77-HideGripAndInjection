@@ -72,6 +72,7 @@ end
 ---@class EvalContext
 ---@field GetActiveClothing  fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveCyberware fun(self: EvalContext): table<string, boolean>
+---@field GetEquippedWeapons fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveWeapons   fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveItems fun(self: EvalContext, itemKind: ItemKind): table<string, boolean>
 ---@field HasActiveItem  fun(self: EvalContext, itemKind: ItemKind, itemName: string): boolean
@@ -338,6 +339,35 @@ function Mod:GetActiveCyberwareForPuppet(puppet)
     return activeCyberware
 end
 
+---Equipped weapons (currently held by the puppet, and in the loadout)
+---@param puppet gamePuppet
+---@return table<string, boolean>
+function Mod:GetEquippedWeaponsForPuppet(puppet)
+    local equipmentSystem = Game.GetScriptableSystemsContainer():Get("EquipmentSystem")
+    local equipmentData = equipmentSystem.GetData(puppet)
+    if not equipmentData then return {}; end
+
+    local equippedWeapons = self:GetActiveWeaponsForPuppet(puppet)
+
+    local equipmentArea = gamedataEquipmentArea.Weapon
+    local slotCount = equipmentData:GetNumberOfSlots(equipmentArea)
+    for slotIndex=0, slotCount-1 do
+        local itemID = equipmentData:GetItemInEquipSlot(equipmentArea, slotIndex)
+        -- Has Item in Slot
+        if ItemID.IsValid(itemID) then
+            local itemRecord = TweakDB:GetRecord(itemID.id)
+            if itemRecord then
+                local friendlyName = itemRecord:FriendlyName()
+                if #friendlyName > 0 then
+                    equippedWeapons[friendlyName] = true
+                end
+            end
+        end
+    end
+
+    return equippedWeapons
+end
+
 ---Active weapons (currently held by the puppet, not in the loadout)
 ---@param puppet gamePuppet
 ---@return table<string, boolean>
@@ -373,6 +403,12 @@ function Mod:CreateRuleEvalContextForPuppet(puppet)
         if self._activeCyberware then return self._activeCyberware; end
         self._activeCyberware = self._mod:GetActiveCyberwareForPuppet(self._puppet)
         return self._activeCyberware
+    end
+
+    function context:GetEquippedWeapons()
+        if self._equippedWeapons then return self._equippedWeapons; end
+        self._equippedWeapons = self._mod:GetEquippedWeaponsForPuppet(self._puppet)
+        return self._equippedWeapons
     end
 
     function context:GetActiveWeapons()
