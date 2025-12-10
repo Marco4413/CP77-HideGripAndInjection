@@ -505,7 +505,6 @@ end
 ---The function basically checks the state of `Group.WeaponGrip` and changes the
 --- appearance of the item to show/hide it
 function Mod:UpdatePlayerTPP()
-    -- TODO: Check if the mod works on vehicles TPP
     local puppets = {}
     table.insert(puppets, self._inventoryPuppet)
     table.insert(puppets, self._photoPuppet)
