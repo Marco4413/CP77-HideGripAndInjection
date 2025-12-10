@@ -284,7 +284,7 @@ end
 
 function Mod:GetActiveCyberwareForPuppet(puppet)
     local equipmentSystem = Game.GetScriptableSystemsContainer():Get("EquipmentSystem")
-    local equipmentData = equipmentSystem.GetData(Game.GetPlayer())
+    local equipmentData = equipmentSystem.GetData(puppet)
     if not equipmentData then return {}; end
 
     local activeCyberware = {}
