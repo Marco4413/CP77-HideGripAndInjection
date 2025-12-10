@@ -515,8 +515,8 @@ function Mod:UpdatePlayerTPP()
 end
 
 function Mod:UpdatePlayerAll()
-    Mod:UpdatePlayer()
-    Mod:UpdatePlayerTPP()
+    self:UpdatePlayer()
+    self:UpdatePlayerTPP()
 end
 
 local function Event_UpdatePlayerAll()
