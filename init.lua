@@ -665,7 +665,7 @@ local function Event_OnDraw()
             ImGui.Separator()
 
             local player = Game.GetPlayer()
-            local evalContext = Mod:CreateRuleEvalContextForPuppet(player)
+            local evalContext = player and Mod:CreateRuleEvalContextForPuppet(player) or nil
 
             if #Mod._rules <= 0 then
                 if BetterUI.ButtonAdd() then
@@ -731,7 +731,14 @@ local function Event_OnDraw()
 
                     ImGui.SameLine()
                     ImGui.PushID("ItemName")
-                    local activeItems = evalContext:GetActiveItems(rule.itemKind)
+                    local activeItems
+                    if not evalContext then
+                        activeItems = {}
+                    elseif rule.itemKind == ItemKind.Weapon then
+                        activeItems = evalContext:GetEquippedWeapons()
+                    else
+                        activeItems = evalContext:GetActiveItems(rule.itemKind)
+                    end
 
                     local EMPTY_ITEM_LABEL = "{Empty Item}"
                     local extraActiveItems = { rule.itemName, EMPTY_ITEM_LABEL }
