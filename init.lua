@@ -325,10 +325,13 @@ function Mod:GetActiveWeaponsForPuppet(puppet)
     if not puppet.GetActiveWeapon then return {}; end
 
     local activeWeapons = {}
-    local weapon = puppet:GetActiveWeapon()
-    if weapon then
-        local weaponName = weapon:GetWeaponRecord():FriendlyName()
-        activeWeapons[weaponName] = true
+    local weaponObject = puppet:GetActiveWeapon()
+    if weaponObject then
+        local weaponRecord = weaponObject:GetWeaponRecord()
+        if weaponRecord then
+            local weaponName = weaponRecord:FriendlyName()
+            activeWeapons[weaponName] = true
+        end
     end
 
     return activeWeapons
