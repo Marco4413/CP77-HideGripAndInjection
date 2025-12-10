@@ -12,6 +12,8 @@ Moreover, this mod is also able to toggle the Weapon Grip within the inventory s
 
 You'll also be able to disable them based on current clothing which may fix some clipping.
 
+![](cet_menu.png)
+
 ### Requirements
 
 - [CET 1.37.0+](https://github.com/yamashi/CyberEngineTweaks)
