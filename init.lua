@@ -102,9 +102,10 @@ function Mod:ResetConfig()
     self.autoApplyRules = false
 
     self._components = {
-        ["a0_004__weapon_grip_decal_02"]             = { enabled = true, group = Group.WeaponGrip },
         ["a0_004__weapon_grip_device"]               = { enabled = true, group = Group.WeaponGrip },
         ["a0_004__weapon_grip_decal_01"]             = { enabled = true, group = Group.WeaponGrip },
+        ["a0_004__weapon_grip_decal_02"]             = { enabled = true, group = Group.WeaponGrip },
+        ["a0_008_ma__fpp_right_q001_injection_mark"] = { enabled = true, group = Group.InjectionMark },
         ["a0_008_wa__fpp_right_q001_injection_mark"] = { enabled = true, group = Group.InjectionMark },
     }
 
