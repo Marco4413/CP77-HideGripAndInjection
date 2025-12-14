@@ -4,13 +4,15 @@
 
 ## About
 
-This mod allows to toggle the Weapon Grip and/or Injection Mark conditionally at runtime.
+This mod allows to toggle the Weapon Grip and/or Injection Mark conditionally at runtime using hotkeys
+and/or custom rules.
 
 There's already a bunch of mods that do this through archive files by removing textures/meshes.
 However, you're required to restart your game if you change your mind.
 Moreover, this mod is also able to toggle the Weapon Grip within the inventory screen and photo mode.
 
-You'll also be able to disable them based on current clothing which may fix some clipping.
+You'll also be able to disable them based on current (arms-covering) clothing, weapons and/or cyberware
+which may fix some clipping.
 
 ![](cet_menu.png)
 
