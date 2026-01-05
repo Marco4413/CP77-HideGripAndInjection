@@ -583,7 +583,7 @@ end
 local function Event_AutoApplyRulesForPlayer()
     if Mod.autoApplyRules then
         if Mod:ApplyRulesForPlayer() then
-            Event_UpdatePlayerAll()
+            Mod:UpdatePlayerAll()
         end
     end
 end
@@ -596,13 +596,19 @@ local function Event_OnInit()
     Observe("PlayerPuppet", "OnWeaponEquipEvent", Event_AutoApplyRulesForPlayer)
     Observe("PlayerPuppet", "OnItemEquipped", Event_AutoApplyRulesForPlayer)
     Observe("PlayerPuppet", "OnItemUnequipped", Event_AutoApplyRulesForPlayer)
-    Observe("PlayerPuppet", "OnMakePlayerVisibleAfterSpawn", Event_AutoApplyRulesForPlayer)
     Observe("gameWardrobeSystem", "SetActiveClothingSetIndex", Event_AutoApplyRulesForPlayer)
     Observe("RipperDocGameController", "OnUninitialize", Event_AutoApplyRulesForPlayer)
 
     Observe("gameuiInventoryGameController", "OnInitialize", Event_UpdatePlayerAll)
     Observe("gameuiInventoryGameController", "RefreshedEquippedItemData", Event_UpdatePlayerAll)
     Observe("gameuiPhotoModeMenuController", "OnShow", Event_UpdatePlayerAll)
+
+    Observe("PlayerPuppet", "OnMakePlayerVisibleAfterSpawn", function()
+        if Mod.autoApplyRules then
+            Mod:ApplyRulesForPlayer()
+        end
+        Mod:UpdatePlayerAll()
+    end)
 
     -- Thanks psiberx! https://github.com/psiberx/cp2077-codeware/blob/main/scripts/Player/PlayerSystem.reds
     -- It's the same as what Codeware does.
