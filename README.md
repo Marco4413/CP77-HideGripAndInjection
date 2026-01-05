@@ -14,6 +14,11 @@ Moreover, this mod is also able to toggle the Weapon Grip within the inventory s
 You'll also be able to disable them based on current (arms-covering) clothing, weapons and/or cyberware
 which may fix some clipping.
 
+There's a specific patch for the quest "The Ripperdoc" which will apply after the quest completes.
+Which means that while playing that quest the weapon grip and injection mark will display as usual.
+Unless the auto-apply rules option is enabled which will hide the grip once you draw your weapon
+(which is part of the quest) but it's seamless enough that it doesn't really matter.
+
 ![](cet_menu.png)
 
 ### Requirements
