@@ -224,7 +224,7 @@ function Mod:LoadConfig()
     if not ok then self:SaveConfig(); end
 end
 
-function Mod:UpdateEntity(entity)
+function Mod:UpdateEntityComponents(entity)
     -- a0_004__weapon_grip_decal_02
     -- a0_004__weapon_grip_device
     -- a0_008_wa__fpp_right_q001_injection_mark
@@ -233,6 +233,10 @@ function Mod:UpdateEntity(entity)
         local component = entity:FindComponentByName(compName)
         if component then
             component:Toggle(compConfig.enabled and true or false)
+            -- It seems like when playing the quest "The Ripperdoc", the quest uses
+            --  `:Toggle()` to show the injection mark. Which means that `:TemporaryHide()`
+            --  will hide it while it's performed which doesn't look good.
+            -- component:TemporaryHide((not compConfig.enabled) and true or false)
         end
     end
 end
@@ -528,7 +532,7 @@ function Mod:UpdatePlayer()
     local player = Game.GetPlayer()
     if not player then return; end
 
-    self:UpdateEntity(player)
+    self:UpdateEntityComponents(player)
 end
 
 ---@param itemID ItemID
