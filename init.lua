@@ -568,6 +568,7 @@ function Mod:UpdatePlayer()
     if not player then return; end
 
     self:UpdateEntityComponents(player)
+    self:UpdatePuppetsAppearance({player})
 end
 
 ---@param itemID ItemID
