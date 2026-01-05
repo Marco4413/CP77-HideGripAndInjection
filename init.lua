@@ -251,6 +251,41 @@ function Mod:IsGroupEnabled(group)
     return false
 end
 
+---While `Mod:UpdateEntityComponents()` hides components, this
+--- function will go through the `TransactionSystem` for each puppet
+--- and set the appearance of the grip to empty if disabled or show it
+--- otherwise, this allows the mod to work for Inventory and Photo Mode
+--- and make it work while surgery is performed by Vik in Act 1.
+---For some unknown reasons this was not required by the player
+--- on my late game saves (only for TPP).
+---@param puppets gamePuppet[]
+function Mod:UpdatePuppetsAppearance(puppets)
+    if #puppets <= 0 then return; end
+
+    local transactionSystem = Game.GetTransactionSystem()
+    local isWeaponGripEnabled = self:IsGroupEnabled(Group.WeaponGrip)
+    local attachmentSlotsRightHand = "AttachmentSlots.RightHand"
+
+    for _, puppet in next, puppets do
+        -- NOTE: Apparently the game only shows one of the hand cyberwares.
+        --       You can have both Johnny's tattoo and the Coprocessor but
+        --        only one will show in the Inventory or Photo Mode
+        local item = transactionSystem:GetItemInSlot(puppet, attachmentSlotsRightHand)
+        if item then
+            local itemID = item:GetItemID()
+            local isWeaponGrip = self:IsWeaponGripItemID(itemID)
+
+            if isWeaponGrip then
+                if isWeaponGripEnabled then
+                    transactionSystem:ResetItemAppearance(puppet, itemID)
+                else
+                    transactionSystem:ChangeItemAppearanceByName(puppet, itemID, "")
+                end
+            end
+        end
+    end
+end
+
 local _VanillaSlots = {
     "AttachmentSlots.Outfit",
     "AttachmentSlots.Torso",
@@ -549,30 +584,7 @@ function Mod:UpdatePlayerTPP()
     local puppets = {}
     table.insert(puppets, self._inventoryPuppet)
     table.insert(puppets, self._photoPuppet)
-
-    if #puppets <= 0 then return; end
-
-    local transactionSystem = Game.GetTransactionSystem()
-    local isWeaponGripEnabled = self:IsGroupEnabled(Group.WeaponGrip)
-
-    for _, puppet in next, puppets do
-        -- NOTE: Apparently the game only shows one of the hand cyberwares.
-        --       You can have both Johnny's tattoo and the Coprocessor but
-        --        only one will show in the Inventory or Photo Mode
-        local item = transactionSystem:GetItemInSlot(puppet, "AttachmentSlots.RightHand")
-        if item then
-            local itemID = item:GetItemID()
-            local isWeaponGrip = self:IsWeaponGripItemID(itemID)
-
-            if isWeaponGrip then
-                if isWeaponGripEnabled then
-                    transactionSystem:ResetItemAppearance(puppet, itemID)
-                else
-                    transactionSystem:ChangeItemAppearanceByName(puppet, itemID, "")
-                end
-            end
-        end
-    end
+    self:UpdatePuppetsAppearance(puppets)
 end
 
 function Mod:UpdatePlayerAll()
