@@ -627,6 +627,33 @@ local function Event_OnInit()
         Mod:UpdatePlayerAll()
     end)
 
+    -- Update player on "q001_01_victor" completion. Why on completion?
+    -- Because it looks good. If you're not auto-applying rules the mark
+    --  and grip will show for the full animation until quest completion.
+    --  If you are auto-applying rules it will show until you draw your
+    --  weapon which still looks good imho, but I don't want to update the
+    --  player each time a weapon is drawn if not necessary. So this specific
+    --  check is required.
+    local Q001_01_VIKTOR_QUEST_ID     = "q001_01_victor"
+    local Q001_01_VIKTOR_PHASE_ID     = "ripperdoc"
+    local Q001_01_VIKTOR_OBJECTIVE_ID = "talk_to_viktor"
+    Observe("JournalManager", "OnQuestEntryUntracked", function(this, questObjective)
+        -- gameJournalQuestObjective[ id:talk_to_viktor ]
+        if not questObjective or questObjective.id ~= Q001_01_VIKTOR_OBJECTIVE_ID then return; end
+        -- gameJournalQuestPhase[ id:ripperdoc ]
+        local questPhase = this:GetParentEntry(questObjective)
+        if not questPhase or questPhase.id ~= Q001_01_VIKTOR_PHASE_ID then return; end
+        -- gameJournalQuest[ id:q001_01_victor ]
+        local quest = this:GetParentEntry(questPhase)
+        if not quest or quest.id ~= Q001_01_VIKTOR_QUEST_ID then return; end
+
+        local entryState = this:GetEntryState(quest)
+        if entryState ~= gameJournalEntryState.Succeeded then return; end
+
+        Mod.Log("Detected completion of '", quest.id, "', updating player.")
+        Mod:UpdatePlayerAll()
+    end)
+
     -- Thanks psiberx! https://github.com/psiberx/cp2077-codeware/blob/main/scripts/Player/PlayerSystem.reds
     -- It's the same as what Codeware does.
     local n_gameuiInventoryPuppetPreviewGameController = CName.new("gameuiInventoryPuppetPreviewGameController");
