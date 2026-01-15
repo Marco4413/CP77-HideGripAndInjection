@@ -1,4 +1,4 @@
-Copyright (c) 2025 [Marco4413](https://github.com/Marco4413/CP77-HideGripAndInjection)
+Copyright (c) 2026 [Marco4413](https://github.com/Marco4413/CP77-HideGripAndInjection)
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
