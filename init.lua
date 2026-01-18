@@ -574,7 +574,9 @@ end
 ---@param itemID ItemID
 ---@return boolean
 function Mod:IsWeaponGripItemID(itemID)
-    return itemID.id.value:find("^Items.AdvancedPowerGrip") ~= nil
+    local id = itemID.id.value
+    return (id:find("^Items.AdvancedPowerGrip") ~= nil or
+            id:find("^Items.AdvancedSmartLink") ~= nil)
 end
 
 ---`Mod:UpdatePlayer()` just toggles components on the player.
