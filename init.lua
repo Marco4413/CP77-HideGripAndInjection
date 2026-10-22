@@ -243,8 +243,15 @@ end
 
 function Mod:IsGroupEnabled(group)
     if group == Group.None then return false; end
+    if group == Group.All then
+        for _, compConfig in next, self._components do
+            if not compConfig.enabled then return false; end
+        end
+        return true
+    end
+
     for _, compConfig in next, self._components do
-        if group == Group.All or compConfig.group == group then
+        if compConfig.group == group then
             return compConfig.enabled
         end
     end
