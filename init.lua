@@ -667,9 +667,7 @@ local function Event_OnInit()
     Mod:LoadConfig()
     Mod._configInitialized = true
 
-    -- TODO: Detect player replacers for :GetActivePuppets()
-    --       Maybe listen to quest updates.
-
+    Observe("PlayerPuppet", "PlayerAttachedCallback", Event_AutoApplyRulesForPlayer) -- Detects replacers
     Observe("PlayerPuppet", "OnWeaponEquipEvent", Event_AutoApplyRulesForPlayer)
     Observe("PlayerPuppet", "OnItemEquipped", Event_AutoApplyRulesForPlayer)
     Observe("PlayerPuppet", "OnItemUnequipped", Event_AutoApplyRulesForPlayer)
