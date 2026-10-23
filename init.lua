@@ -46,6 +46,7 @@ local ItemKind = Enum.New{
     Clothing  = 1,
     Cyberware = 2,
     Weapon    = 3,
+    Puppet    = 4,
 }
 
 local function _SortedKeys(tbl)
@@ -74,6 +75,7 @@ end
 ---@field GetActiveCyberware fun(self: EvalContext): table<string, boolean>
 ---@field GetEquippedWeapons fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveWeapons   fun(self: EvalContext): table<string, boolean>
+---@field GetActivePuppets   fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveItems fun(self: EvalContext, itemKind: ItemKind): table<string, boolean>
 ---@field HasActiveItem  fun(self: EvalContext, itemKind: ItemKind, itemName: string): boolean
 
@@ -89,6 +91,16 @@ local Mod = {
     _components = {},
     ---@type Rule[]
     _rules = {},
+
+    _puppetAliases = {
+        ["Character.Player_Puppet_Base"] = "V",
+        ["Character.johnny_replacer"] = "Johnny",
+        ["Character.kurt_replacer"] = "Kurt",
+        ["Character.mq304_assassin_replacer_female"] = "Aguilar",
+        ["Character.mq304_assassin_replacer_male"]   = "Aguilar",
+        ["Character.q304_netrunner_replacer_bella"] = "French",
+        ["Character.q304_netrunner_replacer_theo"]  = "French",
+    },
 
     _inventoryPuppet = nil,
     _photoPuppet = nil,
@@ -116,6 +128,15 @@ function Mod:ResetConfig()
     alwaysAllRule.group            = Group.All
     alwaysAllRule.groupEnabled     = true
     alwaysAllRule.stopsPropagation = false
+
+    local notVRule = self:AddRule(self:CreateDefaultRule())
+    notVRule.enabled          = true
+    notVRule.condition        = Condition.IfNotActive
+    notVRule.itemKind         = ItemKind.Puppet
+    notVRule.itemName         = "V"
+    notVRule.group            = Group.All
+    notVRule.groupEnabled     = false
+    notVRule.stopsPropagation = false
 end
 
 function Mod:GetComponentsForConfig()
@@ -434,6 +455,25 @@ function Mod:GetActiveWeaponsForPuppet(puppet)
     return activeWeapons
 end
 
+---Active puppets (actual name and friendly aliases)
+---@param puppet gamePuppet
+---@return table<string, boolean>
+function Mod:GetActivePuppets(puppet)
+    if not puppet.GetRecordID then return {}; end
+
+    local activePuppets = {}
+
+    local puppetRecord = puppet:GetRecordID()
+    local puppetName = puppetRecord.value
+
+    activePuppets[puppetName] = true
+    if self._puppetAliases[puppetName] then
+        activePuppets[self._puppetAliases[puppetName]] = true
+    end
+
+    return activePuppets
+end
+
 ---Creates a new EvalContext based on puppet
 ---@param puppet gamePuppet
 ---@return EvalContext
@@ -464,6 +504,12 @@ function Mod:CreateRuleEvalContextForPuppet(puppet)
         return self._activeWeapons
     end
 
+    function context:GetActivePuppets()
+        if self._activePuppets then return self._activePuppets; end
+        self._activePuppets = self._mod:GetActivePuppets(self._puppet)
+        return self._activePuppets
+    end
+
     function context:GetActiveItems(itemKind)
         if itemKind == ItemKind.Clothing then
             return self:GetActiveClothing()
@@ -471,6 +517,8 @@ function Mod:CreateRuleEvalContextForPuppet(puppet)
             return self:GetActiveCyberware()
         elseif itemKind == ItemKind.Weapon then
             return self:GetActiveWeapons()
+        elseif itemKind == ItemKind.Puppet then
+            return self:GetActivePuppets()
         end
         return {}
     end
@@ -618,6 +666,9 @@ local function Event_OnInit()
     Mod:ResetConfig()
     Mod:LoadConfig()
     Mod._configInitialized = true
+
+    -- TODO: Detect player replacers for :GetActivePuppets()
+    --       Maybe listen to quest updates.
 
     Observe("PlayerPuppet", "OnWeaponEquipEvent", Event_AutoApplyRulesForPlayer)
     Observe("PlayerPuppet", "OnItemEquipped", Event_AutoApplyRulesForPlayer)
