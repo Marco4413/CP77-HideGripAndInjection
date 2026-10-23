@@ -805,7 +805,7 @@ local function Event_OnDraw()
 
                     local maxTextWidth = 0
                     for _, itemName in next, extraActiveItems do
-                        local width = ImGui.CalcTextSize(rule.itemName)
+                        local width = ImGui.CalcTextSize(itemName)
                         if width > maxTextWidth then
                             maxTextWidth = width
                         end
