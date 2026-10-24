@@ -43,11 +43,19 @@ local Condition = Enum.New{
 
 ---@enum ItemKind
 local ItemKind = Enum.New{
-    Clothing  = 1,
-    Cyberware = 2,
-    Weapon    = 3,
-    Puppet    = 4,
+    Clothing    = 1,
+    Cyberware   = 2,
+    Weapon      = 3,
+    WeaponRight = 4,
+    WeaponLeft  = 5,
+    Puppet      = 6,
 }
+
+local function _IsAnyWeaponItemKind(itemKind)
+    return (itemKind == ItemKind.Weapon
+        or  itemKind == ItemKind.WeaponRight
+        or  itemKind == ItemKind.WeaponLeft)
+end
 
 local function _SortedKeys(tbl)
     local sortedKeys = {}
@@ -74,7 +82,7 @@ end
 ---@field GetActiveClothing  fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveCyberware fun(self: EvalContext): table<string, boolean>
 ---@field GetEquippedWeapons fun(self: EvalContext): table<string, boolean>
----@field GetActiveWeapons   fun(self: EvalContext): table<string, boolean>
+---@field GetActiveWeapons   fun(self: EvalContext, itemKind: ItemKind|nil): table<string, boolean>
 ---@field GetActivePuppets   fun(self: EvalContext): table<string, boolean>
 ---@field GetActiveItems fun(self: EvalContext, itemKind: ItemKind): table<string, boolean>
 ---@field HasActiveItem  fun(self: EvalContext, itemKind: ItemKind, itemName: string): boolean
@@ -415,7 +423,7 @@ function Mod:GetEquippedWeaponsForPuppet(puppet)
     local equipmentData = equipmentSystem.GetData(puppet)
     if not equipmentData then return {}; end
 
-    local equippedWeapons = self:GetActiveWeaponsForPuppet(puppet)
+    local equippedWeapons = self:GetActiveWeaponsForPuppet(puppet, ItemKind.Weapon)
 
     local equipmentArea = gamedataEquipmentArea.Weapon
     local slotCount = equipmentData:GetNumberOfSlots(equipmentArea)
@@ -438,13 +446,23 @@ end
 
 ---Active weapons (currently held by the puppet, not in the loadout)
 ---@param puppet gamePuppet
+---@param itemKind ItemKind|nil any `ItemKind.Weapon*` entry (`ItemKind.Weapon` is the default)
 ---@return table<string, boolean>
-function Mod:GetActiveWeaponsForPuppet(puppet)
-    if not puppet.GetActiveWeapon then return {}; end
+function Mod:GetActiveWeaponsForPuppet(puppet, itemKind)
+    ---@type WeaponObject[]
+    local weaponObjects = {}
+    if itemKind == ItemKind.WeaponRight and puppet.GetWeaponRight then
+        table.insert(weaponObjects, puppet:GetWeaponRight())
+    elseif itemKind == ItemKind.WeaponLeft and puppet.GetWeaponLeft then
+        table.insert(weaponObjects, puppet:GetWeaponLeft())
+    elseif puppet.GetActiveWeapons then
+        weaponObjects = puppet:GetActiveWeapons()
+    elseif puppet.GetActiveWeapon then
+        table.insert(weaponObjects, puppet:GetActiveWeapon())
+    end
 
     local activeWeapons = {}
-    local weaponObject = puppet:GetActiveWeapon()
-    if weaponObject then
+    for _, weaponObject in next, weaponObjects do
         local weaponRecord = weaponObject:GetWeaponRecord()
         if weaponRecord then
             local weaponName = weaponRecord:FriendlyName()
@@ -498,10 +516,18 @@ function Mod:CreateRuleEvalContextForPuppet(puppet)
         return self._equippedWeapons
     end
 
-    function context:GetActiveWeapons()
-        if self._activeWeapons then return self._activeWeapons; end
-        self._activeWeapons = self._mod:GetActiveWeaponsForPuppet(self._puppet)
-        return self._activeWeapons
+    function context:GetActiveWeapons(itemKind)
+        if not _IsAnyWeaponItemKind(itemKind) then
+            itemKind = ItemKind.Weapon
+        end
+
+        if not self._activeWeapons then
+            self._activeWeapons = {}
+        end
+
+        if self._activeWeapons[itemKind] then return self._activeWeapons[itemKind]; end
+        self._activeWeapons[itemKind] = self._mod:GetActiveWeaponsForPuppet(self._puppet, itemKind)
+        return self._activeWeapons[itemKind]
     end
 
     function context:GetActivePuppets()
@@ -515,8 +541,8 @@ function Mod:CreateRuleEvalContextForPuppet(puppet)
             return self:GetActiveClothing()
         elseif itemKind == ItemKind.Cyberware then
             return self:GetActiveCyberware()
-        elseif itemKind == ItemKind.Weapon then
-            return self:GetActiveWeapons()
+        elseif _IsAnyWeaponItemKind(itemKind) then
+            return self:GetActiveWeapons(itemKind)
         elseif itemKind == ItemKind.Puppet then
             return self:GetActivePuppets()
         end
@@ -843,7 +869,7 @@ local function Event_OnDraw()
                     local activeItems
                     if not evalContext then
                         activeItems = {}
-                    elseif rule.itemKind == ItemKind.Weapon then
+                    elseif _IsAnyWeaponItemKind(rule.itemKind) then
                         activeItems = evalContext:GetEquippedWeapons()
                     else
                         activeItems = evalContext:GetActiveItems(rule.itemKind)
