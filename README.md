@@ -23,7 +23,7 @@ Unless the auto-apply rules option is enabled which will hide the grip once you 
 
 ### Requirements
 
-- [CET 1.37.0+](https://github.com/yamashi/CyberEngineTweaks)
+- [CET 1.38.0+](https://github.com/yamashi/CyberEngineTweaks)
 
 ## Development
 
